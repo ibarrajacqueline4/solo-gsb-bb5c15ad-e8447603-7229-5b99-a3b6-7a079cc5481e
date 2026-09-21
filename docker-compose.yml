@@ -1,0 +1,28 @@
+services:
+  planner:
+    build: .
+    image: release-wave-planner:latest
+    container_name: release-wave-planner
+    ports:
+      - "8000:8000"
+    environment:
+      # SQLite 数据库文件位置（位于持久化卷内）
+      PLANNER_DB: /data/planner.db
+      # CP-SAT 单次可行性/定位求解的时间预算（秒）
+      SOLVER_TIME_LIMIT_SECONDS: "30"
+      # 无波次上限时最终排序优化的时间预算（秒），超时交付贪心方案
+      SOLVER_OPTIMIZE_SECONDS: "5"
+      # 固定单线程与随机种子，保证相同输入得到相同波次方案
+      SOLVER_NUM_WORKERS: "1"
+      SOLVER_RANDOM_SEED: "42"
+    volumes:
+      - planner-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  planner-data:
